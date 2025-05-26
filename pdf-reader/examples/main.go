@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	pdfreader "awesome-tools/pdf-reader"
+	pdfreader "github.com/HiteshRepo/awesome-tools/pdf-reader"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module awesome-tools
+module github.com/HiteshRepo/awesome-tools
 
 go 1.24.1
 
