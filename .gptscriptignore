@@ -1,0 +1,18 @@
+# .gptscriptignore - Files and patterns to exclude from commit message generation
+# 
+# This file works similar to .gitignore but specifically for the commitmessager.gpt script
+# Each line can contain:
+# - Specific file names (e.g., config.json)
+# - Directory names (e.g., node_modules/)
+# - Glob patterns (e.g., *.log, test/*)
+# - Comments start with # and are ignored
+# - Empty lines are ignored
+
+# Example patterns (uncomment to use):
+# *.log
+# *.tmp
+# node_modules/
+# dist/
+# .env
+# package-lock.json
+# yarn.lock
