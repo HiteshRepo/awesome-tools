@@ -5,7 +5,8 @@ Create well formed git commit message based off of the currently staged file
 contents. The message should convey why something was changed and not what
 changed. Use the well known format that has the prefix chore, fix, etc.
 
-Generate commit message based on all staged changes, except for changes to this script itself (commitmessager.gpt).
+Generate commit message based on all staged changes, except for changes to this script itself (commitmessager.gpt)
+and any files, directories, or patterns specified in .gptscriptignore.
 
 Do not use markdown format for the output.
 
@@ -27,16 +28,34 @@ Name: gitstatus
 
 #!/bin/sh
 
-# Check if there are any staged changes excluding this script
-git diff --staged --name-only | grep -v "commitmessager.gpt" > /dev/null
+# Build exclusion patterns from .gptscriptignore file
+EXCLUDE_PATTERNS=""
+if [ -f ".gptscriptignore" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip empty lines and comments (lines starting with #)
+        if [ -n "$line" ] && [ "${line#\#}" = "$line" ]; then
+            # Remove leading/trailing whitespace
+            line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            if [ -n "$line" ]; then
+                EXCLUDE_PATTERNS="$EXCLUDE_PATTERNS :!$line"
+            fi
+        fi
+    done < ".gptscriptignore"
+fi
 
-if [ $? -ne 0 ]; then
-    echo "No staged changes found (excluding commitmessager.gpt)"
+# Always exclude this script itself
+EXCLUDE_PATTERNS="$EXCLUDE_PATTERNS :!commitmessager.gpt"
+
+# Check if there are any staged changes excluding patterns
+STAGED_FILES=$(git diff --staged --name-only -- . $EXCLUDE_PATTERNS)
+
+if [ -z "$STAGED_FILES" ]; then
+    echo "No staged changes found (excluding patterns from .gptscriptignore and commitmessager.gpt)"
     exit 1
 fi
 
-# Show staged changes excluding this script
-git diff --staged -- . ':!commitmessager.gpt'
+# Show staged changes excluding patterns
+git diff --staged -- . $EXCLUDE_PATTERNS
 
 ---
 Name: gitcommit
