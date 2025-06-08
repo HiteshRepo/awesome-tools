@@ -59,3 +59,8 @@ run-example:
 install:
 	@echo "Installing awesome-tools SDK..."
 	go install ./...
+
+# generates commit message and commits
+commit:
+	@echo "Commiting changes..."
+	@gptscript --disable-cache commitmessager.gpt
