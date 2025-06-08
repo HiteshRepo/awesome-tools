@@ -8,6 +8,21 @@ test:
 	@echo "Running tests..."
 	go test -v ./...
 
+# Check pdf-reader test coverage
+pdfreader-test-cov:
+	@echo "Checking pdf-reader package test coverage..."
+	cd pdf-reader && go test -v -cover
+
+# Check dttm test coverage
+dttm-test-cov:
+	@echo "Checking dttm package test coverage..."
+	cd dttm && go test -v -cover
+
+# Check go-struct-utils test coverage
+gostructutils-test-cov:
+	@echo "Checking go-struct-utils package test coverage..."
+	cd go-struct-utils && go test -v -cover
+
 # Format code
 fmt:
 	@echo "Formatting code..."
