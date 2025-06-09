@@ -33,7 +33,7 @@ jobs:
       run: |
         {
         echo 'REVIEW<<EOF'
-        gptscript codereview.gpt --PR_URL=${{ env.PR_URL }}
+        gptscript https://github.com/HiteshRepo/gpt-script-tool/blob/main/tools/github/code-reviewer.gpt --PR_URL=${{ env.PR_URL }}
         echo EOF
         } >> "$GITHUB_ENV"
 
@@ -54,4 +54,3 @@ jobs:
       if: contains(env.REVIEW, 'Approved')
       run: |
        echo "Code Approved"
-      
