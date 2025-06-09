@@ -62,5 +62,9 @@ install:
 
 # generates commit message and commits
 commit:
+	@echo "Downloading git-commit script..."
+	@curl -s -o git-commit.gpt https://raw.githubusercontent.com/HiteshRepo/gpt-script-tool/main/tools/github/git-commit.gpt
 	@echo "Commiting changes..."
-	@gptscript --disable-cache commitmessager.gpt
+	@gptscript --disable-cache git-commit.gpt
+	@echo "Cleaning up downloaded script..."
+	@rm -f git-commit.gpt
