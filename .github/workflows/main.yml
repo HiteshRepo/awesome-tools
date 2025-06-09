@@ -25,6 +25,10 @@ jobs:
     - name: Install GPTScript
       run: curl https://get.gptscript.ai/install.sh | sh
 
+    - name: Download Code Review Script
+      run: |
+        curl -o codereview.gpt https://raw.githubusercontent.com/HiteshRepo/gpt-script-tool/main/tools/github/code-reviewer.gpt
+
     - name: Run GPTScript for Code Review
       id: run_gptscript
       env:
@@ -33,7 +37,7 @@ jobs:
       run: |
         {
         echo 'REVIEW<<EOF'
-        gptscript https://github.com/HiteshRepo/gpt-script-tool/blob/main/tools/github/code-reviewer.gpt --PR_URL=${{ env.PR_URL }}
+        gptscript codereview.gpt --PR_URL=${{ env.PR_URL }}
         echo EOF
         } >> "$GITHUB_ENV"
 
