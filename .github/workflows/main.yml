@@ -25,6 +25,10 @@ jobs:
     - name: Install GPTScript
       run: curl https://get.gptscript.ai/install.sh | sh
 
+    - name: Download Code Review Script
+      run: |
+        curl -o codereview.gpt https://raw.githubusercontent.com/HiteshRepo/gpt-script-tool/main/tools/github/code-reviewer.gpt
+
     - name: Run GPTScript for Code Review
       id: run_gptscript
       env:
@@ -54,4 +58,3 @@ jobs:
       if: contains(env.REVIEW, 'Approved')
       run: |
        echo "Code Approved"
-      
