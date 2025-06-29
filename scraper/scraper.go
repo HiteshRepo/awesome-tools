@@ -65,6 +65,8 @@ func (s *RateLimitedScraper) ScrapeURLs(
 			select {
 			case urlChan <- url:
 			case <-ctx.Done():
+				// s.rlm.Stop() is not required because the expectation is that the same ctx,
+				// would have been passed to the rate limiter while the latter's initialization.
 				return
 			}
 		}
@@ -82,9 +84,13 @@ func (s *RateLimitedScraper) ScrapeURLs(
 					select {
 					case results <- result:
 					case <-ctx.Done():
+						// s.rlm.Stop() is not required because the expectation is that the same ctx,
+						// would have been passed to the rate limiter while the latter's initialization.
 						return
 					}
 				case <-ctx.Done():
+					// s.rlm.Stop() is not required because the expectation is that the same ctx,
+					// would have been passed to the rate limiter while the latter's initialization.
 					return
 				}
 			}
@@ -94,6 +100,7 @@ func (s *RateLimitedScraper) ScrapeURLs(
 	go func() {
 		wg.Wait()
 		close(results)
+		s.rlm.Stop()
 	}()
 
 	return results, nil
