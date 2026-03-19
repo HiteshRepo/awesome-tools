@@ -30,8 +30,10 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 		}
 	}
 
-	if err := c.startConfluence(ctx); err != nil {
-		fmt.Printf("  ⚠ confluence mcp unavailable: %v\n", err)
+	if cfg.Confluence.Command != "" {
+		if err := c.startConfluence(ctx); err != nil {
+			fmt.Printf("  ⚠ confluence mcp unavailable: %v\n", err)
+		}
 	}
 
 	if err := c.startRovo(ctx); err != nil {
