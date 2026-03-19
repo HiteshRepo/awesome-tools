@@ -40,7 +40,14 @@ func main() {
 	}
 
 	view := connect(tickets, activity)
-	md := formatMarkdown(*from, *to, view)
+
+	summary, err := generateSummary(ctx, view)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: summary generation failed: %v\n", err)
+		summary = fallbackSummary(view)
+	}
+
+	md := formatMarkdown(*from, *to, summary, view)
 
 	if *output != "" {
 		if err := os.WriteFile(*output, []byte(md), 0644); err != nil {
