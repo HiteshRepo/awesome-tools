@@ -62,13 +62,52 @@ func generateSummary(ctx context.Context, view ConnectedView) (string, error) {
 func buildPrompt(view ConnectedView) string {
 	var sb strings.Builder
 
-	sb.WriteString("You are writing a developer's weekly status update.\n")
-	sb.WriteString("Convert the items below into concise past-tense bullet points in plain English.\n")
-	sb.WriteString("Rules:\n")
-	sb.WriteString("- No ticket IDs, no PR numbers, no repo names\n")
-	sb.WriteString("- Combine closely related items into one bullet\n")
-	sb.WriteString("- Keep each bullet under 15 words\n")
-	sb.WriteString("- Output only the bullet lines, each starting with '- '\n\n")
+	sb.WriteString(`You are writing a developer's weekly status update.
+Convert the raw items below into a SHORT list of clean past-tense bullet points.
+
+RULES:
+1. MERGE related items into ONE bullet.
+   - Multiple dashboard updates → one bullet about dashboard work.
+   - Multiple items removing the same system → one bullet summarising the removal.
+   - Multiple items creating the same credential/principal → one bullet.
+2. SKIP trivial items (e.g. "fix lint failure", "fix typo", "bump version").
+3. ADD brief context in parentheses when a title alone is unclear.
+   Example: "Support query-service key for discovery routing"
+         → "Added geo-based routing key support for discovery service (replaces regional routing)"
+4. Use plain English. No ticket IDs, PR numbers, or repo names.
+5. Output ONLY the bullet lines, each starting with "- ".
+
+EXAMPLES OF MERGING:
+Input:
+- update metadata cp dashboard
+- update dashboard mar13
+- update routing svc widgets - mar9
+Output:
+- Updated monitoring dashboards for item catalog and routing services
+
+Input:
+- Remove progress-tracking from the Atlas flow
+- delete progress-tracking job (app + iac)
+- item-version job: remove updating progress-tracking records
+- discovery-svc: update recovery-points API to stop using progress-tracking data
+Output:
+- Removed progress-tracking system across Atlas flow, jobs, and APIs
+
+Input:
+- fix: use stack.getOutput() for dev-only azure-oidc optional outputs
+- create Azure app registration for integ test service principal
+- Separate service principal for CD integ tests
+Output:
+- Set up dedicated Azure service principal and app registration for integration test CI
+
+Input:
+- ATLAS: Minimal devex for the data pipeline
+- ATLAS: DataBricks query feasibility spike
+Output:
+- Explored DataBricks query feasibility and developer experience improvements for the data pipeline
+
+ITEMS TO SUMMARISE:
+`)
 
 	if len(view.Linked) > 0 || len(view.NoGH) > 0 {
 		sb.WriteString("Jira tickets:\n")
