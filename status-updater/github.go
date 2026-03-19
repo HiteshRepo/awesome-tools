@@ -6,17 +6,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 )
 
-// defaultRepos is the hardcoded list of GitHub repos to query.
-// Edit this list to add or remove repos.
-var defaultRepos = []string{
-	"Veeam-VDC/vdc-shared-data-plane",
-	"Veeam-VDC/vdc-shared-utils",
-	"Veeam-VDC/control-plane-backend",
-	"Veeam-VDC/control-plane-platform",
+// repos returns the list of GitHub repos to query, read from GITHUB_REPOS
+// (comma-separated, e.g. "owner/repo1,owner/repo2").
+func repos() []string {
+	val := os.Getenv("GITHUB_REPOS")
+	if val == "" {
+		return nil
+	}
+	var out []string
+	for _, r := range strings.Split(val, ",") {
+		if r := strings.TrimSpace(r); r != "" {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // PRSummary holds key fields from a GitHub pull request.
@@ -51,7 +59,12 @@ func fetchGitHubActivity(ctx context.Context, from, to string) ([]RepoActivity, 
 	}
 
 	var activities []RepoActivity
-	for _, repo := range defaultRepos {
+	repoList := repos()
+	if len(repoList) == 0 {
+		fmt.Fprintln(os.Stderr, "warning: GITHUB_REPOS not set, no repos to scan")
+	}
+
+	for _, repo := range repoList {
 		act := RepoActivity{Repo: repo}
 
 		prs, err := fetchPRs(ctx, repo, from, to)
