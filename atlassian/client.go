@@ -24,8 +24,10 @@ type Client struct {
 func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 	c := &Client{cfg: cfg}
 
-	if err := c.startJira(ctx); err != nil {
-		return nil, fmt.Errorf("jira mcp: %w", err)
+	if cfg.Jira.Command != "" {
+		if err := c.startJira(ctx); err != nil {
+			fmt.Printf("  ⚠ jira mcp unavailable: %v\n", err)
+		}
 	}
 
 	if err := c.startConfluence(ctx); err != nil {

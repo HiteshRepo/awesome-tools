@@ -5,6 +5,14 @@ type Config struct {
 	Jira       ServerConfig
 	Confluence ServerConfig
 	Rovo       RovoConfig
+	JiraREST   JiraRESTConfig // for REST API fallback
+}
+
+// JiraRESTConfig holds credentials for direct Jira REST API access.
+type JiraRESTConfig struct {
+	BaseURL  string // e.g. https://yourorg.atlassian.net
+	Email    string
+	APIToken string
 }
 
 // ServerConfig defines the command, args, and env for a stdio MCP server.

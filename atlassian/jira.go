@@ -65,7 +65,23 @@ func (c *Client) GetTicket(ctx context.Context, ticketID string) (*Ticket, error
 }
 
 // SearchTickets runs a JQL query and returns up to limit results.
+// It tries acli → REST API → MCP in order, returning the first success.
 func (c *Client) SearchTickets(ctx context.Context, jql string, limit int) (*SearchResult, error) {
+	// 1. Try acli
+	if res, err := c.acliSearch(ctx, jql, limit); err == nil {
+		return res, nil
+	}
+
+	// 2. Try REST API
+	if res, err := c.restSearch(ctx, jql, limit); err == nil {
+		return res, nil
+	}
+
+	// 3. Fallback to MCP
+	if c.jira == nil {
+		return nil, fmt.Errorf("jira search: no available method (acli, REST, or MCP)")
+	}
+
 	req := mcp.CallToolRequest{}
 	req.Params.Name = "jira_search"
 	req.Params.Arguments = map[string]any{
