@@ -1,4 +1,4 @@
-.PHONY: help build test clean run-example install deps fmt vet lint benchmark coverage
+.PHONY: help build test clean run-example install deps fmt vet lint benchmark coverage status-updater-build status-updater-run status-updater-test
 build:
 	@echo "Building awesome-tools SDK..."
 	go build -v ./...
@@ -59,6 +59,28 @@ run-example:
 install:
 	@echo "Installing awesome-tools SDK..."
 	go install ./...
+
+# Build the status-updater binary
+status-updater-build:
+	@echo "Building status-updater..."
+	go build -o bin/status-updater ./status-updater
+
+# Run status-updater (requires FROM and TO, e.g. make status-updater-run FROM=2024-01-01 TO=2024-01-07)
+status-updater-run:
+	@if [ -z "$(FROM)" ] || [ -z "$(TO)" ]; then \
+		echo "Usage: make status-updater-run FROM=YYYY-MM-DD TO=YYYY-MM-DD [OUTPUT=file.md]"; \
+		exit 1; \
+	fi
+	@if [ -n "$(OUTPUT)" ]; then \
+		go run ./status-updater --from $(FROM) --to $(TO) --output $(OUTPUT); \
+	else \
+		go run ./status-updater --from $(FROM) --to $(TO); \
+	fi
+
+# Run status-updater tests
+status-updater-test:
+	@echo "Running status-updater tests..."
+	go test -v -cover ./status-updater/...
 
 # generates commit message and commits
 commit:

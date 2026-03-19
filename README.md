@@ -1,413 +1,276 @@
 # Awesome Tools
 
-A collection of useful Go utilities, SDKs, and development notes.
+A collection of Go utilities, Python libraries, and developer tooling.
 
-## Overview
+## Packages
 
-This repository contains a set of Go tools and libraries designed to simplify common development workflows. Currently includes:
+### Go
 
-- **PDF Reader SDK** - A powerful Go library for PDF text extraction and processing
-- **DTTM** - Date/time utilities for flexible parsing and formatting with multiple format support
-- **Go Struct Utils** - Utilities for converting Go structs to maps using different approaches
-- **Rate Limiter** - Token bucket rate limiter using goroutines and channels
-- **Scraper** - Concurrent, rate-limited web scraper with a worker pool pattern
-- **Atlassian** - MCP (Model Context Protocol) client for Jira, Confluence, and Rovo
-- **CLI Commands** - Handy shell snippets for Go development
-- **Pulumi** - Deployment notes and issue resolutions
+| Package | Description |
+|---------|-------------|
+| `rate-limiter` | Token bucket rate limiter using goroutines and channels |
+| `scraper` | Concurrent, rate-limited web scraper with worker pool and injectable scrape logic |
+| `dttm` | Date/time parsing with auto-detected format and UTC output |
+| `go-struct-utils` | Three struct→map strategies: JSON, basic reflection, advanced reflection |
+| `pdf-reader` | PDF text extraction with page ranges, URL fetching, and search |
+| `atlassian` | MCP client for Jira, Confluence, and Rovo |
+| `status-updater` | CLI that generates a markdown status report from Jira + GitHub activity, optionally summarized via Claude Haiku |
+
+### Python (`python/`)
+
+| Package | Description |
+|---------|-------------|
+| `std-llm-client` | Abstract LLM client with provider implementations |
+| `std-embeddings` | Abstract embedding provider (OpenAI, Voyage, local) |
+| `std-vector-store` | Abstract vector store interface with pluggable backends |
+| `std-mcp-utils` | MCP server utilities — tool registration, types, request handling |
+| `std-rag` | RAG pipeline wiring together LLM, embeddings, vector store, and chunker |
+
+### Notes
+
+| Directory | Description |
+|-----------|-------------|
+| `cli-commands/` | Shell snippets for Go development tasks |
+| `pulumi/` | Deployment notes and issue resolutions |
+
+---
 
 ## Project Structure
 
 ```
 awesome-tools/
-├── pdf-reader/          # PDF processing SDK
-│   ├── reader.go
-│   ├── utils.go
-│   ├── examples/
-│   └── README.md
-├── dttm/                # Date/time utilities
-│   ├── dttm.go
-│   └── README.md
-├── go-struct-utils/     # Struct to map conversion utilities
-│   ├── utils.go
-│   ├── utils_test.go
-│   └── README.md
-├── rate-limiter/        # Token bucket rate limiter
-│   ├── rate_limiter.go
-│   └── README.md
-├── scraper/             # Concurrent rate-limited web scraper
-│   ├── scraper.go
-│   └── README.md
-├── atlassian/           # MCP client for Jira, Confluence, Rovo
-│   ├── client.go
-│   ├── config.go
-│   ├── jira.go
-│   ├── confluence.go
-│   ├── rovo.go
-│   └── resources.go
-├── cli-commands/        # Useful shell commands for Go development
-│   └── commands-list.sh
-├── pulumi/              # Pulumi deployment notes
-│   └── issue#1.md
+├── rate-limiter/
+├── scraper/
+├── dttm/
+├── go-struct-utils/
+├── pdf-reader/
+├── atlassian/
+├── status-updater/
+├── python/
+│   ├── std-llm-client/
+│   ├── std-embeddings/
+│   ├── std-vector-store/
+│   ├── std-mcp-utils/
+│   └── std-rag/
+├── cli-commands/
+├── pulumi/
 ├── go.mod
-├── Makefile
-└── README.md
+└── Makefile
 ```
+
+---
 
 ## Quick Start
 
-### Prerequisites
-
-- Go 1.24.1 or later
-
-### Installation
-
-Clone the repository:
+**Prerequisites:** Go 1.24.1+, Python 3.11+ (for Python packages)
 
 ```bash
-git clone <repository-url>
-cd awesome-tools
-```
-
-Install dependencies:
-
-```bash
+# Install Go dependencies
 make deps
-```
 
-### Building
-
-```bash
+# Build all Go packages
 make build
-```
 
-### Testing
-
-```bash
+# Run all Go tests
 make test
 ```
 
-## Available Tools
+---
 
-### PDF Reader SDK
+## Go Package Details
 
-A comprehensive Go SDK for reading and processing PDF documents.
+### rate-limiter
 
-**Key Features:**
-- Extract text from PDF files
-- Search text within PDFs
-- Get document metadata
-- Process PDFs from URLs
-- Batch processing support
-
-**Quick Example:**
+Allow N operations per time span. `Wait(ctx)` blocks; `LimitCh(ctx)` returns a channel.
 
 ```go
-package main
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
 
-import (
-    "fmt"
-    "log"
+rl := rlm.NewRateLimiter(ctx, time.Second, 5) // 5 ops/sec
+defer rl.Stop()
 
-    pdfreader "github.com/HiteshRepo/awesome-tools/pdf-reader"
-)
-
-func main() {
-    text, err := pdfreader.ExtractTextFromFile("document.pdf")
-    if err != nil {
-        log.Fatal(err)
+for i := 0; i < 10; i++ {
+    if rl.Wait(ctx) {
+        fmt.Println("rate-limited work")
     }
-    fmt.Println("Extracted text:", text)
 }
 ```
 
-For detailed documentation, see [pdf-reader/README.md](pdf-reader/README.md).
-
 ---
 
-### DTTM - Date/Time Utilities
+### scraper
 
-A flexible Go package for parsing and formatting time strings in various formats.
-
-**Key Features:**
-- Multiple time format support (RFC3339, human-readable, custom formats)
-- Automatic format detection during parsing
-- UTC conversion for all parsed times
-
-**Quick Example:**
+Worker pool scraper that wraps `rate-limiter`. Inject custom logic via `SetScrapeFunc`.
 
 ```go
-package main
+s := scraper.NewScraper(5, 3) // 5 rps, 3 workers
+s.SetRateLimit(ctx, time.Second, 5)
 
-import (
-    "fmt"
-    "log"
-
-    "github.com/HiteshRepo/awesome-tools/dttm"
-)
-
-func main() {
-    t, err := dttm.ParseTime("25-Dec-2023_15:30:45")
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Printf("Standard: %s\n", dttm.FormatTo(t, dttm.Standard))
-    fmt.Printf("Date Only: %s\n", dttm.FormatTo(t, dttm.DateOnly))
+resultsCh, _ := s.ScrapeURLs(ctx, []string{"https://example.com"})
+for res := range resultsCh {
+    fmt.Printf("%s — %s\n", res.URL, res.Content)
 }
 ```
 
-For detailed documentation, see [dttm/README.md](dttm/README.md).
+---
+
+### dttm
+
+Auto-detects format, always returns UTC.
+
+```go
+t, _ := dttm.ParseTime("25-Dec-2023_15:30:45")
+fmt.Println(dttm.FormatTo(t, dttm.Standard))
+```
 
 ---
 
-### Go Struct Utils
+### go-struct-utils
 
-Utilities for converting Go structs to maps using different approaches and strategies.
-
-**Key Features:**
-- Three conversion methods: JSON-based, basic reflection, advanced reflection
-- Full JSON tag support (including `-` exclusion)
-- Handles nested structs and pointers
-
-**Quick Example:**
+Three conversion strategies with different type-preservation tradeoffs.
 
 ```go
-package main
-
-import (
-    "fmt"
-    "log"
-
-    gostructutils "github.com/HiteshRepo/awesome-tools/go-struct-utils"
-)
-
 type Person struct {
     Name     string `json:"name"`
-    Age      int    `json:"age"`
     Password string `json:"-"`
 }
 
-func main() {
-    person := Person{Name: "John", Age: 30, Password: "secret"}
-    result, err := gostructutils.StructToMapJSON(person)
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Printf("Result: %+v\n", result)
-    // Output: map[age:30 name:John]
-}
+result, _ := gostructutils.StructToMapJSON(Person{Name: "John", Password: "secret"})
+// map[name:John]  — Password excluded by json:"-"
 ```
-
-For detailed documentation, see [go-struct-utils/README.md](go-struct-utils/README.md).
 
 ---
 
-### Rate Limiter
+### pdf-reader
 
-A lightweight token bucket rate limiter using goroutines and channels.
-
-**Key Features:**
-- Limit N actions per time span
-- Context-aware cancellation
-- `Wait(ctx)` (blocking, recommended) and `LimitCh(ctx)` (channel-based) APIs
-
-**Quick Example:**
+Extract text, search content, fetch from URL, batch process.
 
 ```go
-package main
-
-import (
-    "context"
-    "fmt"
-    "time"
-
-    rlm "github.com/HiteshRepo/awesome-tools/rate-limiter"
-)
-
-func main() {
-    ctx, cancel := context.WithCancel(context.Background())
-    defer cancel()
-
-    // Allow 5 operations per second
-    rl := rlm.NewRateLimiter(ctx, time.Second, 5)
-    defer rl.Stop()
-
-    for i := 0; i < 10; i++ {
-        if rl.Wait(ctx) {
-            fmt.Println("Do rate-limited work")
-        }
-    }
-}
+text, _ := pdfreader.ExtractTextFromFile("document.pdf")
+fmt.Println(text)
 ```
 
-For detailed documentation, see [rate-limiter/README.md](rate-limiter/README.md).
+See [pdf-reader/README.md](pdf-reader/README.md).
 
 ---
 
-### Scraper
+### atlassian
 
-Concurrent, rate-limited web scraper with a worker pool and injectable scrape logic.
-
-**Key Features:**
-- Worker pool for concurrency
-- Configurable rate limiting (wraps `rate-limiter`)
-- Custom scrape function via `SetScrapeFunc`
-- Graceful cancellation via context
-
-**Quick Example:**
+MCP client for Jira (stdio), Confluence (stdio), and Rovo (HTTP). Confluence and Rovo startup failures are non-fatal.
 
 ```go
-package main
-
-import (
-    "context"
-    "fmt"
-    "time"
-
-    "github.com/HiteshRepo/awesome-tools/scraper"
-)
-
-func main() {
-    ctx := context.Background()
-
-    s := scraper.NewScraper(5, 3) // 5 rps, 3 workers
-    s.SetRateLimit(ctx, time.Second, 5)
-
-    urls := []string{"https://example.com", "https://golang.org"}
-    resultsCh, err := s.ScrapeURLs(ctx, urls)
-    if err != nil {
-        panic(err)
-    }
-
-    for res := range resultsCh {
-        if res.Error != nil {
-            fmt.Printf("Failed: %s — %v\n", res.URL, res.Error)
-        } else {
-            fmt.Printf("Scraped: %s — %s\n", res.URL, res.Content)
-        }
-    }
+cfg := atlassian.Config{
+    Jira: atlassian.ServerConfig{
+        Command: "npx",
+        Args:    []string{"-y", "@atlassian/mcp-jira"},
+        Env:     map[string]string{"JIRA_TOKEN": "..."},
+    },
 }
-```
-
-For detailed documentation, see [scraper/README.md](scraper/README.md).
-
----
-
-### Atlassian MCP Client
-
-A Go client for interacting with Jira, Confluence, and Rovo via the Model Context Protocol (MCP).
-
-**Key Features:**
-- Jira and Confluence via stdio MCP servers
-- Rovo via HTTP MCP endpoint
-- Non-fatal startup for Confluence/Rovo (logged as warnings)
-- Configuration via `Config` struct
-
-**Quick Example:**
-
-```go
-package main
-
-import (
-    "github.com/HiteshRepo/awesome-tools/atlassian"
-)
-
-func main() {
-    cfg := atlassian.Config{
-        Jira: atlassian.ServerConfig{
-            Command: "npx",
-            Args:    []string{"-y", "@atlassian/mcp-jira"},
-            Env:     map[string]string{"JIRA_TOKEN": "..."},
-        },
-        Rovo: atlassian.RovoConfig{
-            URL:      "https://api.atlassian.com/mcp",
-            Email:    "user@example.com",
-            APIToken: "...",
-            CloudID:  "<site-uuid>",
-        },
-    }
-
-    client, err := atlassian.NewClient(cfg)
-    if err != nil {
-        panic(err)
-    }
-    defer client.Close()
-}
+client, _ := atlassian.NewClient(cfg)
+defer client.Close()
 ```
 
 ---
 
-### CLI Commands
+### status-updater
 
-Handy shell snippets for Go development tasks.
+Generates a markdown status report for a date range by pulling Jira tickets and GitHub PRs, then optionally rewriting them into clean past-tense bullets via Claude Haiku.
 
-**Find unique versions of a package across all `go.mod` files in a repo:**
+**Setup:**
 
 ```bash
-grep -R <package-name> --include="go.mod" . | awk '{print $2, $3}' | sort | uniq -c
+cp status-updater/sample.env .env
+# fill in ANTHROPIC_API_KEY, GITHUB_REPOS, JIRA_* values
+source .env
 ```
 
-See [cli-commands/commands-list.sh](cli-commands/commands-list.sh) for the full list.
+**Run:**
+
+```bash
+go run ./status-updater --from 2024-01-01 --to 2024-01-07
+go run ./status-updater --from 2024-01-01 --to 2024-01-07 --output report.md
+```
+
+Jira source priority: `acli` (if on PATH) > REST API (`JIRA_URL` + `JIRA_EMAIL` + `JIRA_API_TOKEN`) > MCP server.
 
 ---
 
-### Pulumi Notes
+## Python Package Details
 
-Deployment notes and issue resolutions for Pulumi-based infrastructure.
+All packages live under `python/` and follow a provider-abstraction pattern.
 
-- **[issue#1 — Helm Release Lock](pulumi/issue%231.md)**: How to diagnose and resolve `another operation (install/upgrade/rollback) is in progress` errors during Pulumi deployments.
+### std-llm-client
+
+Abstract `LLMClient` base with concrete provider implementations.
+
+```python
+from std_llm_client import LLMClient, Message
+```
+
+### std-embeddings
+
+Abstract `EmbeddingProvider` supporting OpenAI, Voyage, and local models.
+
+```python
+from std_embeddings import EmbeddingProvider, EmbeddingConfig
+```
+
+### std-vector-store
+
+Abstract `VectorStore` with pluggable backends. Operates on `Document` and `SearchResult` types.
+
+```python
+from std_vector_store import VectorStore, Document
+```
+
+### std-mcp-utils
+
+Utilities for building MCP servers: tool registration, type definitions, request handling.
+
+```python
+from std_mcp_utils import MCPServer, tool
+```
+
+### std-rag
+
+End-to-end RAG pipeline composing `std-llm-client`, `std-embeddings`, `std-vector-store`, and a text chunker.
+
+```python
+pipeline = RAGPipeline(llm=client, embedder=embedder, store=store)
+response = pipeline.query("What is the refund policy?")
+```
 
 ---
 
 ## Development
 
-### Available Make Commands
-
-- `make build` - Build all packages
-- `make test` - Run all tests
-- `make fmt` - Format code
-- `make vet` - Run go vet
-- `make lint` - Run golint (requires golint installation)
-- `make deps` - Download and tidy dependencies
-
-### Per-Package Tests
+### Make Commands
 
 ```bash
+make build              # Build all Go packages
+make test               # Run all Go tests
+make fmt                # Format Go code
+make vet                # Run go vet
+make lint               # Run golint
+make deps               # Download and tidy dependencies
+
+# Per-package tests
 go test -v ./pdf-reader/...
 go test -v ./dttm/...
 go test -v ./rate-limiter/...
 go test -v ./go-struct-utils/...
-```
 
-### Coverage Reports
-
-```bash
+# Coverage reports
 make pdfreader-test-cov
 make dttm-test-cov
 make gostructutils-test-cov
 ```
 
-### Code Quality
+### Dependencies
 
-```bash
-make fmt && make vet && make lint && make test
-```
-
-## Dependencies
-
-- `github.com/ledongthuc/pdf` - PDF parsing and text extraction
-- `github.com/pkg/errors` - Enhanced error handling
-- `github.com/mark3labs/mcp-go` - MCP client/server framework
-- `github.com/docker/go-units` - Unit conversion utilities
-- `github.com/spf13/cast` - Type casting utilities
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and quality checks
-5. Submit a pull request
-
-## Support
-
-For issues and questions, please open an issue in the repository.
+- `github.com/ledongthuc/pdf` — PDF parsing
+- `github.com/pkg/errors` — enhanced error handling
+- `github.com/mark3labs/mcp-go` — MCP client/server framework
+- `github.com/docker/go-units` — unit conversion
+- `github.com/spf13/cast` — type casting
