@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -35,7 +36,7 @@ func generateSummary(ctx context.Context, view ConnectedView) (string, error) {
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, anthropicAPI, bytes.NewReader(body))
 	if err != nil {
-		return fallbackSummary(view), nil
+		return "", fmt.Errorf("build request: %w", err)
 	}
 	req.Header.Set("x-api-key", apiKey)
 	req.Header.Set("anthropic-version", "2023-06-01")
@@ -43,17 +44,25 @@ func generateSummary(ctx context.Context, view ConnectedView) (string, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fallbackSummary(view), nil
+		return "", fmt.Errorf("call anthropic: %w", err)
 	}
 	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("anthropic API %d: %s", resp.StatusCode, respBody)
+	}
 
 	var result struct {
 		Content []struct {
 			Text string `json:"text"`
 		} `json:"content"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil || len(result.Content) == 0 {
-		return fallbackSummary(view), nil
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return "", fmt.Errorf("parse response: %w", err)
+	}
+	if len(result.Content) == 0 {
+		return "", fmt.Errorf("empty response from anthropic: %s", respBody)
 	}
 
 	return strings.TrimSpace(result.Content[0].Text), nil
