@@ -42,7 +42,11 @@ func formatMarkdown(from, to string, tickets []atlassian.TicketSummary, activity
 		fmt.Fprintf(&sb, "\n#### %s\n", act.Repo)
 
 		for _, pr := range act.PRs {
-			fmt.Fprintf(&sb, "- **PR #%d** [%s](%s) — %s\n", pr.Number, pr.Title, pr.URL, pr.State)
+			state := strings.ToLower(pr.State)
+			if pr.MergedAt != "" {
+				state = "merged"
+			}
+			fmt.Fprintf(&sb, "- **PR #%d** [%s](%s) — %s\n", pr.Number, pr.Title, pr.URL, state)
 		}
 
 		if len(act.Commits) > 0 {
