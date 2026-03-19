@@ -25,6 +25,7 @@ type PRSummary struct {
 	Title     string `json:"title"`
 	URL       string `json:"url"`
 	State     string `json:"state"`
+	Body      string `json:"body"`
 	CreatedAt string `json:"createdAt"`
 	MergedAt  string `json:"mergedAt"`
 }
@@ -82,31 +83,42 @@ func fetchGitHubLogin(ctx context.Context) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-// fetchPRs uses gh search prs which has reliable --created date filtering.
+// fetchPRs uses gh pr list (works for private org repos) and filters
+// client-side by createdAt within [from, to].
 func fetchPRs(ctx context.Context, repo, from, to string) ([]PRSummary, error) {
 	args := []string{
-		"search", "prs",
-		"--author", "@me",
+		"pr", "list",
 		"--repo", repo,
-		"--created", fmt.Sprintf("%s..%s", from, to),
-		"--json", "number,title,url,state,createdAt,mergedAt",
-		"--limit", "100",
+		"--author", "@me",
+		"--state", "all",
+		"--json", "number,title,url,state,body,createdAt,mergedAt",
+		"--limit", "200",
 	}
 
 	out, err := exec.CommandContext(ctx, "gh", args...).Output()
 	if err != nil {
-		return nil, fmt.Errorf("gh search prs: %w", err)
+		return nil, fmt.Errorf("gh pr list: %w", err)
 	}
 
-	var prs []PRSummary
-	if err := json.Unmarshal(out, &prs); err != nil {
+	var all []PRSummary
+	if err := json.Unmarshal(out, &all); err != nil {
 		return nil, fmt.Errorf("parse prs: %w", err)
+	}
+
+	// Filter client-side: keep PRs whose creation date falls within [from, to].
+	var prs []PRSummary
+	for _, pr := range all {
+		if len(pr.CreatedAt) >= 10 {
+			date := pr.CreatedAt[:10]
+			if date >= from && date <= to {
+				prs = append(prs, pr)
+			}
+		}
 	}
 	return prs, nil
 }
 
-// fetchCommits uses the REST API (since/until params) which is more reliable
-// than gh search commits for date-bounded queries.
+// fetchCommits uses the REST API (since/until params) for reliable date filtering.
 func fetchCommits(ctx context.Context, repo, from, to, login string) ([]CommitSummary, error) {
 	endpoint := fmt.Sprintf(
 		"repos/%s/commits?since=%sT00:00:00Z&until=%sT23:59:59Z&author=%s&per_page=100",

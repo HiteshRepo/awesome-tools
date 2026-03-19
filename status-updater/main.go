@@ -39,7 +39,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "warning: github fetch failed: %v\n", err)
 	}
 
-	md := formatMarkdown(*from, *to, tickets, activity)
+	view := connect(tickets, activity)
+	md := formatMarkdown(*from, *to, view)
 
 	if *output != "" {
 		if err := os.WriteFile(*output, []byte(md), 0644); err != nil {
