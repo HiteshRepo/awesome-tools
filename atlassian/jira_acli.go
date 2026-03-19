@@ -35,17 +35,13 @@ func (c *Client) acliSearch(ctx context.Context, jql string, limit int) (*Search
 
 func parseACLISearchResult(data []byte) (*SearchResult, error) {
 	var issues []struct {
-		Key     string `json:"key"`
-		Summary string `json:"summary"`
-		Status  struct {
-			Name string `json:"name"`
-		} `json:"status"`
-		Priority struct {
-			Name string `json:"name"`
-		} `json:"priority"`
-		Assignee struct {
-			DisplayName string `json:"displayName"`
-		} `json:"assignee"`
+		Key    string `json:"key"`
+		Fields struct {
+			Summary  string                            `json:"summary"`
+			Status   struct{ Name string `json:"name"` } `json:"status"`
+			Priority struct{ Name string `json:"name"` } `json:"priority"`
+			Assignee struct{ DisplayName string `json:"displayName"` } `json:"assignee"`
+		} `json:"fields"`
 	}
 
 	if err := json.Unmarshal(data, &issues); err != nil {
@@ -56,10 +52,10 @@ func parseACLISearchResult(data []byte) (*SearchResult, error) {
 	for _, issue := range issues {
 		result.Tickets = append(result.Tickets, TicketSummary{
 			ID:       issue.Key,
-			Summary:  issue.Summary,
-			Status:   issue.Status.Name,
-			Priority: issue.Priority.Name,
-			Assignee: issue.Assignee.DisplayName,
+			Summary:  issue.Fields.Summary,
+			Status:   issue.Fields.Status.Name,
+			Priority: issue.Fields.Priority.Name,
+			Assignee: issue.Fields.Assignee.DisplayName,
 		})
 	}
 	return result, nil
