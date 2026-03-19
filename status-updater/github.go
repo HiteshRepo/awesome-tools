@@ -10,8 +10,10 @@ import (
 // defaultRepos is the hardcoded list of GitHub repos to query.
 // Edit this list to add or remove repos.
 var defaultRepos = []string{
-	"HiteshRepo/awesome-tools",
-	// add more repos here
+	"Veeam-VDC/vdc-shared-data-plane",
+	"Veeam-VDC/vdc-shared-utils",
+	"Veeam-VDC/control-plane-backend",
+	"Veeam-VDC/control-plane-platform",
 }
 
 // PRSummary holds key fields from a GitHub pull request.
