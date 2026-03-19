@@ -36,8 +36,10 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 		}
 	}
 
-	if err := c.startRovo(ctx); err != nil {
-		fmt.Printf("  ⚠ rovo mcp unavailable: %v\n", err)
+	if cfg.Rovo.URL != "" {
+		if err := c.startRovo(ctx); err != nil {
+			fmt.Printf("  ⚠ rovo mcp unavailable: %v\n", err)
+		}
 	}
 
 	return c, nil
