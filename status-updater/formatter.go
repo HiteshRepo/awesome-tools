@@ -5,14 +5,19 @@ import (
 	"strings"
 )
 
-func formatMarkdown(from, to string, summary string, view ConnectedView) string {
+func formatMarkdown(from, to string, bullets []BulletItem, view ConnectedView) string {
 	var sb strings.Builder
 
 	fmt.Fprintf(&sb, "## Status Update: %s → %s\n\n", from, to)
-	sb.WriteString(summary)
-	sb.WriteString("\n")
 
-	// Untracked PRs — suggest creating tickets.
+	for _, item := range bullets {
+		if len(item.Tickets) > 0 {
+			fmt.Fprintf(&sb, "- %s (%s)\n", item.Bullet, strings.Join(item.Tickets, ", "))
+		} else {
+			fmt.Fprintf(&sb, "- %s\n", item.Bullet)
+		}
+	}
+
 	if len(view.Orphaned) > 0 {
 		sb.WriteString("\n---\n")
 		sb.WriteString("**Untracked work** (no Jira ticket found — consider creating tickets):\n")
