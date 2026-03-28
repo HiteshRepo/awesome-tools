@@ -65,21 +65,28 @@ func (c *Client) GetTicket(ctx context.Context, ticketID string) (*Ticket, error
 }
 
 // SearchTickets runs a JQL query and returns up to limit results.
-// It tries acli → REST API → MCP in order, returning the first success.
+// It tries Claude Code MCP → acli → REST API → stdio MCP in order.
 func (c *Client) SearchTickets(ctx context.Context, jql string, limit int) (*SearchResult, error) {
-	// 1. Try acli
+	// 1. Claude Code HTTP MCP (preferred — no extra credentials needed)
+	if c.claudeCodeMCP != nil {
+		if res, err := c.claudeCodeMCPSearch(ctx, jql, limit); err == nil {
+			return res, nil
+		}
+	}
+
+	// 2. acli CLI tool
 	if res, err := c.acliSearch(ctx, jql, limit); err == nil {
 		return res, nil
 	}
 
-	// 2. Try REST API
+	// 3. REST API
 	if res, err := c.restSearch(ctx, jql, limit); err == nil {
 		return res, nil
 	}
 
-	// 3. Fallback to MCP
+	// 4. stdio MCP subprocess
 	if c.jira == nil {
-		return nil, fmt.Errorf("jira search: no available method (acli, REST, or MCP)")
+		return nil, fmt.Errorf("jira search: no available method (claude-code-mcp, acli, REST, or stdio MCP)")
 	}
 
 	req := mcp.CallToolRequest{}
@@ -96,6 +103,61 @@ func (c *Client) SearchTickets(ctx context.Context, jql string, limit int) (*Sea
 	}
 
 	return parseSearchResult(extractText(resp))
+}
+
+// claudeCodeMCPSearch calls searchJiraIssuesUsingJql on the connected HTTP MCP server.
+func (c *Client) claudeCodeMCPSearch(ctx context.Context, jql string, limit int) (*SearchResult, error) {
+	req := mcp.CallToolRequest{}
+	req.Params.Name = "searchJiraIssuesUsingJql"
+	req.Params.Arguments = map[string]any{
+		"cloudId":    c.cfg.ClaudeCodeMCP.CloudID,
+		"jql":        jql,
+		"maxResults": limit,
+		"fields":     []string{"summary", "status", "priority", "assignee"},
+	}
+
+	resp, err := c.claudeCodeMCP.CallTool(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("searchJiraIssuesUsingJql: %w", err)
+	}
+
+	return parseClaudeCodeMCPSearchResult(extractText(resp))
+}
+
+// parseClaudeCodeMCPSearchResult parses the atlassian-vdc-workspace response format:
+//
+//	{"issues": {"totalCount": N, "nodes": [{"key": "X-1", "fields": {...}}, ...]}}
+func parseClaudeCodeMCPSearchResult(raw string) (*SearchResult, error) {
+	var payload struct {
+		Issues struct {
+			TotalCount int `json:"totalCount"`
+			Nodes      []struct {
+				Key    string `json:"key"`
+				Fields struct {
+					Summary  string                            `json:"summary"`
+					Status   struct{ Name string `json:"name"` } `json:"status"`
+					Priority struct{ Name string `json:"name"` } `json:"priority"`
+					Assignee struct{ DisplayName string `json:"displayName"` } `json:"assignee"`
+				} `json:"fields"`
+			} `json:"nodes"`
+		} `json:"issues"`
+	}
+
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return nil, fmt.Errorf("parse claude code mcp result: %w", err)
+	}
+
+	result := &SearchResult{Total: payload.Issues.TotalCount}
+	for _, node := range payload.Issues.Nodes {
+		result.Tickets = append(result.Tickets, TicketSummary{
+			ID:       node.Key,
+			Summary:  node.Fields.Summary,
+			Status:   node.Fields.Status.Name,
+			Priority: node.Fields.Priority.Name,
+			Assignee: node.Fields.Assignee.DisplayName,
+		})
+	}
+	return result, nil
 }
 
 func parseJiraIssue(id, raw string) (*Ticket, error) {

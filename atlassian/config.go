@@ -2,10 +2,25 @@ package atlassian
 
 // Config holds the MCP server configuration for Atlassian services.
 type Config struct {
-	Jira       ServerConfig
-	Confluence ServerConfig
-	Rovo       RovoConfig
-	JiraREST   JiraRESTConfig // for REST API fallback
+	Jira          ServerConfig
+	Confluence    ServerConfig
+	Rovo          RovoConfig
+	JiraREST      JiraRESTConfig      // for REST API fallback
+	ClaudeCodeMCP ClaudeCodeMCPConfig // preferred: reuses Claude Code OAuth token
+}
+
+// ClaudeCodeMCPConfig connects to an HTTP MCP server using the OAuth token
+// that Claude Code has already stored in ~/.claude/.credentials.json.
+// No additional credentials are required beyond running:
+//
+//	claude mcp add <ServerName> --transport http <URL>
+type ClaudeCodeMCPConfig struct {
+	// ServerName must match the name used with "claude mcp add" (e.g. "atlassian-vdc-workspace").
+	ServerName string
+	// CloudID is the Atlassian site passed to tools that require it (e.g. "veeam-vdc.atlassian.net").
+	CloudID string
+	// CredentialsPath overrides the default ~/.claude/.credentials.json location.
+	CredentialsPath string
 }
 
 // JiraRESTConfig holds credentials for direct Jira REST API access.
