@@ -11,6 +11,8 @@
 | BM25 retriever | **Add** | Missing — implemented as `bm25_retriever.py` using `rank-bm25==0.2.2` |
 | Reranker | **Add** | Missing — implemented as `reranker.py`; merges BM25 + dense, scores by recency × relevance |
 
+| `hybrid_retriever.py` (HybridRetriever) | **Add** | Built on BM25 + dense; deduplicates, applies reranker scoring |
+
 ## Result
 
-All 16 tests pass after adding BM25Retriever and Reranker. `HybridRetriever` (task 10.1) to be built on top of these.
+19/19 tests pass (verified 2026-11-03): BM25Retriever, HybridRetriever, Reranker, TextChunker, RAGPipeline all confirmed. **M31 complete.**
