@@ -19,7 +19,7 @@ type IOSPayload struct {
 	Charging       *bool     `json:"charging,omitempty"`
 	DiskFreeBytes  *int64    `json:"disk_free_bytes,omitempty"`
 	DiskTotalBytes *int64    `json:"disk_total_bytes,omitempty"`
-	WiFiConnected  *bool     `json:"wifi_connected,omitempty"`
+	WiFiName       *string   `json:"wifi_name,omitempty"`
 	ReceivedAt     time.Time `json:"-"`
 }
 

@@ -24,7 +24,7 @@ func makeStore() *push.Store {
 func TestHandlePushValid204(t *testing.T) {
 	s := makeStore()
 
-	body := `{"id":"iphone-15","battery_percent":80,"charging":false,"disk_free_bytes":10000000000,"disk_total_bytes":128000000000,"wifi_connected":true}`
+	body := `{"id":"iphone-15","battery_percent":80,"charging":false,"disk_free_bytes":10000000000,"disk_total_bytes":128000000000,"wifi_name":"HomeWiFi"}`
 	req := httptest.NewRequest(http.MethodPost, "/push", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 	s.HandlePush(w, req)
@@ -88,12 +88,12 @@ func TestPushAppearsInGet(t *testing.T) {
 
 	batt := float64(75)
 	charging := true
-	wifi := true
+	wifi := "HomeWiFi"
 	body, _ := json.Marshal(push.IOSPayload{
 		ID:             "iphone-15",
 		BatteryPercent: &batt,
 		Charging:       &charging,
-		WiFiConnected:  &wifi,
+		WiFiName:       &wifi,
 	})
 	req := httptest.NewRequest(http.MethodPost, "/push", bytes.NewBuffer(body))
 	w := httptest.NewRecorder()
