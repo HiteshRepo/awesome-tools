@@ -86,11 +86,14 @@ func TestHandlePushMethodNotAllowed(t *testing.T) {
 func TestPushAppearsInGet(t *testing.T) {
 	s := makeStore()
 
+	batt := float64(75)
+	charging := true
+	wifi := true
 	body, _ := json.Marshal(push.IOSPayload{
 		ID:             "iphone-15",
-		BatteryPercent: 75,
-		Charging:       true,
-		WiFiConnected:  true,
+		BatteryPercent: &batt,
+		Charging:       &charging,
+		WiFiConnected:  &wifi,
 	})
 	req := httptest.NewRequest(http.MethodPost, "/push", bytes.NewBuffer(body))
 	w := httptest.NewRecorder()
@@ -100,7 +103,7 @@ func TestPushAppearsInGet(t *testing.T) {
 	if p == nil {
 		t.Fatal("expected stored payload, got nil")
 	}
-	if p.BatteryPercent != 75 {
+	if p.BatteryPercent == nil || *p.BatteryPercent != 75 {
 		t.Errorf("expected battery_percent=75, got %v", p.BatteryPercent)
 	}
 }

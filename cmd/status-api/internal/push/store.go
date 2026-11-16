@@ -12,13 +12,14 @@ import (
 )
 
 // IOSPayload is the data an iOS Shortcut sends via POST /push.
+// Only id is required; all metric fields are optional.
 type IOSPayload struct {
 	ID             string    `json:"id"`
-	BatteryPercent float64   `json:"battery_percent"`
-	Charging       bool      `json:"charging"`
-	DiskFreeBytes  int64     `json:"disk_free_bytes"`
-	DiskTotalBytes int64     `json:"disk_total_bytes"`
-	WiFiConnected  bool      `json:"wifi_connected"`
+	BatteryPercent *float64  `json:"battery_percent,omitempty"`
+	Charging       *bool     `json:"charging,omitempty"`
+	DiskFreeBytes  *int64    `json:"disk_free_bytes,omitempty"`
+	DiskTotalBytes *int64    `json:"disk_total_bytes,omitempty"`
+	WiFiConnected  *bool     `json:"wifi_connected,omitempty"`
 	ReceivedAt     time.Time `json:"-"`
 }
 
