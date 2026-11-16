@@ -1,0 +1,11 @@
+[Unit]
+Description=Homelab Agent — device metrics HTTP daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/homelab-agent --port 9100
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -82,6 +82,43 @@ status-updater-test:
 	@echo "Running status-updater tests..."
 	go test -v -cover ./status-updater/...
 
+# ─── homelab-agent ────────────────────────────────────────────────────────────
+
+AGENT_BIN_DIR ?= bin/homelab-agent
+
+# Cross-compile homelab-agent for linux/amd64 and darwin/arm64
+homelab-agent-build:
+	@echo "Cross-compiling homelab-agent..."
+	@mkdir -p $(AGENT_BIN_DIR)
+	GOOS=linux  GOARCH=amd64 go build -o $(AGENT_BIN_DIR)/homelab-agent-linux-amd64  ./cmd/homelab-agent/
+	GOOS=darwin GOARCH=arm64 go build -o $(AGENT_BIN_DIR)/homelab-agent-darwin-arm64 ./cmd/homelab-agent/
+	@echo "Binaries written to $(AGENT_BIN_DIR)/"
+
+homelab-agent-test:
+	@echo "Running homelab-agent tests..."
+	go test -v -cover ./cmd/homelab-agent/...
+
+homelab-agent-run:
+	go run ./cmd/homelab-agent/ --port 9100
+
+# ─── status-api ───────────────────────────────────────────────────────────────
+
+status-api-build:
+	@echo "Building status-api..."
+	CGO_ENABLED=0 go build -o bin/status-api ./cmd/status-api/
+
+status-api-test:
+	@echo "Running status-api tests..."
+	go test -v -cover ./cmd/status-api/...
+
+status-api-run:
+	go run ./cmd/status-api/ --port 8080 --devices config/devices.yaml
+
+status-api-docker:
+	docker build -f cmd/status-api/Dockerfile -t ghcr.io/hiteshrepo/status-api:latest .
+
+# ─── generates commit message and commits ─────────────────────────────────────
+
 # generates commit message and commits
 commit:
 	@echo "Downloading git-commit script..."
