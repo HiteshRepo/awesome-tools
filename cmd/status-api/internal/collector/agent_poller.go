@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -89,6 +90,7 @@ func (p *AgentPoller) poll(d registry.Device) {
 	url := fmt.Sprintf("http://%s:%d/metrics", d.Host, d.Port)
 	resp, err := p.client.Get(url)
 	if err != nil {
+		log.Printf("poll %s (%s): %v", d.ID, url, err)
 		p.mu.Lock()
 		p.states[d.ID].Error = true
 		p.mu.Unlock()
@@ -98,6 +100,7 @@ func (p *AgentPoller) poll(d registry.Device) {
 
 	var m AgentMetrics
 	if err := json.NewDecoder(resp.Body).Decode(&m); err != nil {
+		log.Printf("poll %s: decode error: %v", d.ID, err)
 		p.mu.Lock()
 		p.states[d.ID].Error = true
 		p.mu.Unlock()
