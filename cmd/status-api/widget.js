@@ -1,12 +1,12 @@
 // Homelab Device Status Widget for Scriptable
 // ─────────────────────────────────────────────
 // Install: paste into Scriptable, set widget parameter to your status-api base URL
-// Default: http://192.168.29.201:8080 (plain HTTP, direct LoadBalancer IP — no hostname needed)
+// Default: http://192.168.29.146:31376 (plain HTTP, direct LoadBalancer IP — no hostname needed)
 // To use HTTPS: change BASE_URL to https://status-api.lab.hiteshp.in
 //
 // Widget parameter overrides BASE_URL at runtime.
 
-const BASE_URL = args.widgetParameter || "http://192.168.29.201:8080"
+const BASE_URL = args.widgetParameter || "http://192.168.29.146:31376"
 const STATUS_PATH = "/status"
 
 // ─── Colours ───────────────────────────────────────────────────────────────────
