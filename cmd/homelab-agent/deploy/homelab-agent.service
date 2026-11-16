@@ -3,7 +3,7 @@ Description=Homelab Agent — device metrics HTTP daemon
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/homelab-agent --port 9100
+ExecStart=/usr/local/bin/homelab-agent --port 9101
 Restart=on-failure
 RestartSec=5
 
